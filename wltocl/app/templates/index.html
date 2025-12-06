@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Railway WL Confirmation Predictor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 0 20px;
+      background: #f7f7f7;
+      color: #222;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #555;
+      margin-bottom: 30px;
+    }
+
+    label {
+      display: block;
+      margin-top: 14px;
+      font-weight: bold;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      box-sizing: border-box;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 15px;
+    }
+
+    .row {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .col {
+      flex: 1;
+      min-width: 220px;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 12px 18px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      background: #2563eb;
+      color: white;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #1e40af;
+    }
+
+    .result-box {
+      margin-top: 30px;
+      padding: 18px;
+      border-radius: 10px;
+      background: #ffffff;
+      box-shadow: 0 0 10px rgba(0,0,0,0.08);
+    }
+
+    .high { color: #15803d; font-weight: bold; }
+    .medium { color: #ca8a04; font-weight: bold; }
+    .low { color: #b91c1c; font-weight: bold; }
+
+    .explain {
+      margin-top: 15px;
+      font-size: 14px;
+      color: #444;
+    }
+
+    .explain ul {
+      margin-top: 8px;
+      padding-left: 20px;
+    }
+
+    .flash {
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 14px;
+      font-size: 14px;
+    }
+
+    .flash-error {
+      background: #fee2e2;
+      color: #7f1d1d;
+      border: 1px solid #fca5a5;
+    }
+
+    .flash-info {
+      background: #e0f2fe;
+      color: #075985;
+      border: 1px solid #7dd3fc;
+    }
+
+    .note {
+      margin-top: 12px;
+      font-size: 13px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Railway WL Confirmation Predictor</h1>
+  <p class="subtitle">
+    Enter your booking WL, journey date and travel class to estimate confirmation chance.
+  </p>
+
+  <!-- FLASH MESSAGES -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, msg in messages %}
+        <div class="flash {% if category == 'error' %}flash-error{% else %}flash-info{% endif %}">
+          {{ msg }}
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <!-- FORM -->
+  <form method="post">
+
+    <label>Booking WL number (at time of booking)</label>
+    <input type="number" name="bookingStatus" required placeholder="e.g. 45">
+
+    <div class="row">
+      <div class="col">
+        <label>Current date</label>
+        <input type="date" id="currentDate" name="currentDate" required>
+      </div>
+
+      <div class="col">
+        <label>Journey date</label>
+        <input type="date" name="trainDate" required>
+      </div>
+    </div>
+
+    <label>Travel class</label>
+    <select name="travelClass" required>
+      <option value="">-- Select class --</option>
+      <option value="SL">Sleeper (SL)</option>
+      <option value="3A">AC 3 Tier (3A)</option>
+      <option value="2A">AC 2 Tier (2A)</option>
+      <option value="1A">First AC (1A)</option>
+      <option value="CC">AC Chair Car (CC)</option>
+      <option value="2S">Second Sitting (2S)</option>
+    </select>
+
+    <button type="submit">Predict</button>
+
+  </form>
+
+  <!-- RESULT -->
+  {% if result %}
+    <div class="result-box">
+      <h3>Prediction Result</h3>
+
+      <p>
+        Confirmation Probability:
+        <strong>{{ result['probability'] }}%</strong>
+      </p>
+
+      <p>
+        Risk Level:
+        {% if result['label'] == "High" %}
+          <span class="high">High</span>
+        {% elif result['label'] == "Medium" %}
+          <span class="medium">Medium</span>
+        {% else %}
+          <span class="low">Low</span>
+        {% endif %}
+      </p>
+
+      {% if explanation %}
+        <div class="explain">
+          <h4>How this was estimated</h4>
+          <ul>
+            {% for row in explanation %}
+              <li>{{ row.feature }} → {{ row.importance }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <p class="note">
+    ⚠️ This prediction is an approximate estimate based on historical patterns and simple rules.
+    It is not an official IRCTC confirmation guarantee.
+  </p>
+
+  <!-- AUTO-FILL CURRENT DATE -->
+  <script>
+    (function(){
+      const el = document.getElementById("currentDate");
+      if (!el) return;
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const dd = String(now.getDate()).padStart(2, '0');
+      el.value = `${yyyy}-${mm}-${dd}`;
+    })();
+  </script>
+
+</body>
+</html>
